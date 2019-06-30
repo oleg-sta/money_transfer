@@ -16,12 +16,15 @@ To build application you should have:
 * java 1.8 or above
 
 To compile:
+
 mvn clean install
 
 To start:
+
 java -jar target/moneytransfer-1.0-SNAPSHOT.jar
 
 Wait for startup.
+
 Please see (#it-test) for checking
 
 ## IT tests
