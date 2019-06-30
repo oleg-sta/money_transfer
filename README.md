@@ -11,4 +11,4 @@ This is pplication for money transfer. This is standalone application, has api s
 
 ## IT tests
 
-There are integration tests for manual start. For each test application should be started without any modification in data. See test in [dir]https://github.com/oleg-sta/money_transfer/tree/master/src/test/java/ru/test/account/api classes with *IT suffix.
+There are integration tests for manual start. For each test application should be started without any modification in data. See test in [dir](https://github.com/oleg-sta/money_transfer/tree/master/src/test/java/ru/test/account/api) classes with *IT suffix.

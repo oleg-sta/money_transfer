@@ -10,7 +10,7 @@ import ru.test.account.validation.AccountValidation;
 
 public class TransferService {
 
-    AccountDAO accountDAO = new AccountDAO();
+    AccountDAO accountDAO = AccountDAO.getInstance();
     TransferDAO transferDAO = new TransferDAO();
 
     public Integer transferMoney(TransferEntity transferEntity) throws BusinessException {
@@ -29,7 +29,7 @@ public class TransferService {
         if (account2 == null) {
             throw new BusinessException("Account2 invalid", StatusResponse.NO_ACCOUNT2);
         }
-        int result = accountDAO.updateAccountsSum(account1, account2, transferEntity.getAmount());
+        int result = accountDAO.updateAccountsSum(transferEntity.getAccount1(), transferEntity.getAccount2(), transferEntity.getAmount());
         if (result != StatusResponse.OK) {
             throw new BusinessException("Error creating trasnfer", result);
         }

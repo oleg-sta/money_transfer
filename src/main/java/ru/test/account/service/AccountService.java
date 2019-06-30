@@ -8,7 +8,7 @@ import ru.test.account.validation.AccountValidation;
 
 public class AccountService {
 
-    AccountDAO accountDAO = new AccountDAO();
+    AccountDAO accountDAO = AccountDAO.getInstance();
 
     public AccountEntity getAccountInfo(String account) throws BusinessException {
         if (!AccountValidation.checkAccount(account)) {

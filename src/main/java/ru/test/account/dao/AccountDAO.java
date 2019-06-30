@@ -2,65 +2,52 @@ package ru.test.account.dao;
 
 import ru.test.account.api.dto.StatusResponse;
 import ru.test.account.model.AccountEntity;
-import ru.test.account.db.PersistenceManager;
 
-import javax.persistence.EntityManager;
-import javax.persistence.EntityManagerFactory;
-import javax.persistence.LockModeType;
-import javax.persistence.PersistenceException;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class AccountDAO {
 
+    private Map<String, AccountEntity> accounts = new ConcurrentHashMap<>();
     private Map<String, Lock> locksMonitor = new ConcurrentHashMap<>();
+    private AtomicInteger counter = new AtomicInteger();
 
-    EntityManagerFactory emf = PersistenceManager.getInstance().getEntityManagerFactory();
-
-    public AccountEntity getAccountValue(String account) {
-        EntityManager theManager = emf.createEntityManager();
-        List<AccountEntity> entities = theManager.createQuery("SELECT t FROM AccountEntity t where t.name = :value1", AccountEntity.class)
-                .setParameter("value1", account).getResultList();
-        if (entities.size() == 1) {
-            System.out.println("result " + entities.get(0).getSum());
-            return entities.get(0);
-        }
-        theManager.close();
-        return null;
+    private static final AccountDAO accountDAO = new AccountDAO();
+    private AccountDAO() {}
+    public static AccountDAO getInstance() {
+        return accountDAO;
     }
 
-    public int updateAccountsSum(AccountEntity accountEntity1, AccountEntity accountEntity2, int sum) {
-        EntityManager theManager = emf.createEntityManager();
+    public AccountEntity getAccountValue(String account) {
+        AccountEntity accountEntity = accounts.get(account);
+        return accountEntity;
+    }
+
+    public int updateAccountsSum(String accountEntity1, String accountEntity2, int sum) {
         String accountLockFirst;
         String accountLockSecond;
-        if (accountEntity1.getName().compareTo(accountEntity2.getName()) > 0) {
-            accountLockFirst = accountEntity1.getName();
-            accountLockSecond = accountEntity2.getName();
+        if (accountEntity1.compareTo(accountEntity2) > 0) {
+            accountLockFirst = accountEntity1;
+            accountLockSecond = accountEntity2;
         } else {
-            accountLockFirst = accountEntity2.getName();
-            accountLockSecond = accountEntity1.getName();
+            accountLockFirst = accountEntity2;
+            accountLockSecond = accountEntity1;
         }
         Lock lockFirst = locksMonitor.computeIfAbsent(accountLockFirst, o -> new ReentrantLock());
         Lock lockSecond = locksMonitor.computeIfAbsent(accountLockSecond, o -> new ReentrantLock());
         lockFirst.lock();
         lockSecond.lock();
         try {
-            theManager.getTransaction().begin();
-            AccountEntity newAccountEntity1 = theManager.find(AccountEntity.class, accountEntity1.getId());
+            AccountEntity newAccountEntity1 = accounts.get(accountEntity1);
             if (newAccountEntity1.getSum() < sum) {
-                theManager.getTransaction().commit();
                 return StatusResponse.ACCOUNT1_NO_MONEY;
             }
             newAccountEntity1.setSum(newAccountEntity1.getSum() - sum);
-            theManager.merge(newAccountEntity1);
-            AccountEntity newAccountEntity2 = theManager.find(AccountEntity.class, accountEntity2.getId());
+            AccountEntity newAccountEntity2 = accounts.get(accountEntity2);
             newAccountEntity2.setSum(newAccountEntity2.getSum() + sum);
-            theManager.merge(newAccountEntity2);
-            theManager.getTransaction().commit();
-            theManager.close();
         } finally {
             lockSecond.unlock();
             lockFirst.unlock();
@@ -68,17 +55,13 @@ public class AccountDAO {
         return StatusResponse.OK;
     }
 
-    public int createAccount(AccountEntity account) {
-        EntityManager theManager = emf.createEntityManager();
-        try {
-            theManager.getTransaction().begin();
-            theManager.persist(account);
-            theManager.getTransaction().commit();
-        } catch (PersistenceException e) {
+    // we assume that this is a rare operation
+    public synchronized int createAccount(AccountEntity account) {
+        if (accounts.containsKey(account.getName())) {
             return StatusResponse.ACCOUNT_EXISTS;
         }
-        theManager.close();
-
+        account.setId(counter.incrementAndGet());
+        accounts.put(account.getName(), account);
         return StatusResponse.OK;
     }
 }

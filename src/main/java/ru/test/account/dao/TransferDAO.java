@@ -1,29 +1,18 @@
 package ru.test.account.dao;
 
-import ru.test.account.db.PersistenceManager;
 import ru.test.account.model.TransferEntity;
 
-import javax.persistence.EntityManager;
-import javax.persistence.EntityManagerFactory;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class TransferDAO {
 
-    EntityManagerFactory emf = PersistenceManager.getInstance().getEntityManagerFactory();
+    private AtomicInteger counter = new AtomicInteger();
 
 
     public void createTransfer(TransferEntity transferEntity) {
-        EntityManager theManager = emf.createEntityManager();
-        theManager.getTransaction().begin();
-        theManager.persist(transferEntity);
-        theManager.getTransaction().commit();
-        theManager.close();
+        transferEntity.setId(counter.incrementAndGet());
     }
 
     public void updateStatus(TransferEntity transferEntity) {
-        EntityManager theManager = emf.createEntityManager();
-        theManager.getTransaction().begin();
-        theManager.merge(transferEntity);
-        theManager.getTransaction().commit();
-        theManager.close();
     }
 }
